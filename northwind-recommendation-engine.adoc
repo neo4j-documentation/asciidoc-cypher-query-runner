@@ -1,0 +1,256 @@
+Recently, I was asked to pitch a method for providing recommendations.  Luckily, armed with the knowledge obtained from talks from Max De Marzi and https://skillsmatter.com/skillscasts/7298-modelling-a-recommendation-engine-a-worked-example[Mark Needham^] at a recent  Neo4j London Meetups, I knew this could be easily achieved with Neo4j.
+
+The key issue with recommendation engines comes from the data.
+Luckily, Neo4j comes bundled with the Northwind Graph Example.
+The Northwind database is an infamous dataset containing purchase history that has been used to teach relational databases for years and was a great place to start.
+
+You can import the Northwind database into a graph by following the http://neo4j.com/developer/guide-importing-data-and-etl/["Import Data into Neo4j"^] post on Neo4j or type the following into Neo4j's browser, e.g. empty database in Neo4j Desktop or a https://neo4j.com/sandbox[blank sandbox^].
+
+----
+:play northwind graph
+----
+
+Here is how to load the data manually:
+
+ifdef::env-guide[]
+This command toggles on the enableMultiStatementMode setting needed later.
+
+[source,cypher]
+----
+:config {"enableMultiStatementMode": true}
+----
+
+endif::[]
+
+//setup
+//hide
+.Add indexes, constraints and load data
+[source,cypher]
+----
+CREATE INDEX ON :Product(productID);
+CREATE INDEX ON :Product(productName);
+CREATE INDEX ON :Category(categoryID);
+CREATE INDEX ON :Employee(employeeID);
+CREATE INDEX ON :Supplier(supplierID);
+CREATE INDEX ON :Customer(customerID);
+CREATE INDEX ON :Customer(customerName);
+CREATE CONSTRAINT ON (o:Order) ASSERT o.orderID IS UNIQUE;
+
+// Create customers
+ USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/customers.csv" AS row
+CREATE (:Customer {companyName: row.companyName, customerID: row.customerID, fax: row.fax, phone: row.phone});
+
+// Create products
+USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/products.csv" AS row
+CREATE (:Product {productName: row.productName, productID: row.productID, unitPrice: toFloat(row.UnitPrice)});
+
+// Create suppliers
+USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/suppliers.csv" AS row
+CREATE (:Supplier {companyName: row.companyName, supplierID: row.supplierID});
+
+// Create employees
+USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/employees.csv" AS row
+CREATE (:Employee {employeeID:row.employeeID,  firstName: row.firstName, lastName: row.lastName, title: row.title});
+
+// Create categories
+USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/categories.csv" AS row
+CREATE (:Category {categoryID: row.categoryID, categoryName: row.categoryName, description: row.description});
+
+// Create Orders
+ USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/orders.csv" AS row
+MERGE (o:Order {orderID: row.orderID}) ON CREATE SET o.shipName =  row.shipName;
+
+// Relate orders to products
+ USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/order-details.csv" AS row
+MATCH (o:Order {orderID: row.orderID})
+MATCH (product:Product {productID: row.productID})
+MERGE (o)-[pu:PRODUCT]->(product)
+ON CREATE SET pu.unitPrice = toFloat(row.unitPrice), pu.quantity = toFloat(row.quantity);
+
+// Relate Orders to Employees
+ USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/orders.csv" AS row
+MATCH (o:Order {orderID: row.orderID})
+MATCH (employee:Employee {employeeID: row.employeeID})
+MERGE (employee)-[:SOLD]->(o);
+
+// Relate customers to orders
+ USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/orders.csv" AS row
+MATCH (o:Order {orderID: row.orderID})
+MATCH (customer:Customer {customerID: row.customerID})
+MERGE (customer)-[:PURCHASED]->(o);
+
+// Relate Products to suppliers
+ USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/products.csv" AS row
+MATCH (product:Product {productID: row.productID})
+MATCH (supplier:Supplier {supplierID: row.supplierID})
+MERGE (supplier)-[:SUPPLIES]->(product);
+
+// Relate Products to Categories
+ USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/products.csv" AS row
+MATCH (product:Product {productID: row.productID})
+MATCH (category:Category {categoryID: row.categoryID})
+MERGE (product)-[:PART_OF]->(category);
+
+// Relate employees to managers
+ USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/employees.csv" AS row
+MATCH (employee:Employee {employeeID: row.employeeID})
+MATCH (manager:Employee {employeeID: row.reportsTo})
+MERGE (employee)-[:REPORTS_TO]->(manager);
+
+// Add unit price
+ USING PERIODIC COMMIT 100
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/data/order-details.csv" AS row
+MATCH (o:Order {orderID: row.orderID})
+MATCH (product:Product {productID: row.productID})
+MERGE (o)-[pu:PRODUCT]->(product)
+ON CREATE SET pu.unitPrice = toFloat(row.unitPrice), pu.quantity = toFloat(row.quantity);
+----
+
+Now we've got some data, let's start to explore the dataset.
+
+=== Dataset
+
+image::http://dev.assets.neo4j.com.s3.amazonaws.com/wp-content/uploads/Northwind_diagram.jpg[]
+
+The Northwind Graph provides us with a rich dataset, but primarily we're interested in Customers and their Orders.   In a Graph, the data is modelled like so:
+
+image::https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/product-model.png[]
+
+
+=== Popular Products
+
+To find the most popular products in the dataset, we can follow the path from `:Customer` to `:Product`
+
+[source,cypher]
+----
+match (c:Customer)-[:PURCHASED]->(o:Order)-[:PRODUCT]->(p:Product)
+return c.companyName, p.productName, count(o) as orders
+order by orders desc
+limit 5
+----
+// table
+
+
+=== Content Based Recommendations
+
+The simplest recommendation we can make for a Customer is a content based recommendation.
+Based on their previous purchases, can we recommend them anything that they haven't already bought?
+For every product our customer has purchased, let's see what other customers have also purchased.
+Each `:Product` is related to a `:Category`  so we can use this to further narrow down the list of products to recommend.
+
+[source,cypher]
+----
+match (c:Customer)-[:PURCHASED]->(o:Order)-[:PRODUCT]->(p:Product)
+<-[:PRODUCT]-(o2:Order)-[:PRODUCT]->(p2:Product)-[:PART_OF]->(:Category)<-[:PART_OF]-(p)
+WHERE c.customerID = 'ANTON' and NOT( (c)-[:PURCHASED]->(:Order)-[:PRODUCT]->(p2) )
+return c.companyName, p.productName as has_purchased, p2.productName as has_also_purchased, count(DISTINCT o2) as occurrences
+order by occurrences desc
+limit 5
+----
+// table
+
+Pretty standard so far.
+
+=== Collaborative Filtering
+
+Collaborative Filtering is a technique used by recommendation engines to recommend content based on the feedback from other Customers.
+To do this, we can use the k-NN (k-nearest neighbors) Algorithm.
+k-N works by grouping items into classifications based on their similarity to eachother.
+In our case, this could be ratings between two Customers for a Product.
+To give a real world example, this is how sites like Netflix make recommendations based on the ratings given to shows you've already watched.
+
+The first thing we need to do to make this model work is create some "ratings relationships".
+For now, let's create a score somewhere between 0 and 1 for each product based on the number of times a customer has purchased a product.
+
+[source,cypher]
+----
+MATCH (c:Customer)-[:PURCHASED]->(o:Order)-[:PRODUCT]->(p:Product)
+WITH c, count(p) as total
+MATCH (c)-[:PURCHASED]->(o:Order)-[:PRODUCT]->(p:Product)
+WITH c, total,p, count(o)*1.0 as orders
+MERGE (c)-[rated:RATED]->(p)
+ON CREATE SET rated.rating = orders/total
+ON MATCH SET rated.rating = orders/total
+WITH c.companyName as company, p.productName as product, orders, total, rated.rating as rating
+ORDER BY rating DESC
+RETURN company, product, orders, total, rating LIMIT 10
+----
+// table
+
+Now our model should look something like this:
+
+image::https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/ratings.png[]
+
+
+[source,cypher]
+----
+MATCH (me:Customer)-[r:RATED]->(p:Product)
+WHERE me.customerID = 'ANTON'
+RETURN p.productName, r.rating limit 10
+----
+// table
+
+Now we can use these ratings to compare the preferences of two Customers.
+
+[source,cypher]
+----
+// See Customer's Similar Ratings to Others
+MATCH (c1:Customer {customerID:'ANTON'})-[r1:RATED]->(p:Product)<-[r2:RATED]-(c2:Customer)
+RETURN c1.customerID, c2.customerID, p.productName, r1.rating, r2.rating,
+CASE WHEN r1.rating-r2.rating < 0 THEN -(r1.rating-r2.rating) ELSE r1.rating-r2.rating END as difference
+ORDER BY difference ASC
+LIMIT 15
+----
+// table
+
+
+Now, we can create a similarity score between two Customers using Cosine Similarity (Hat tip to Nicole White for the original Cypher query...)
+
+[source,cypher]
+----
+MATCH (c1:Customer)-[r1:RATED]->(p:Product)<-[r2:RATED]-(c2:Customer)
+WITH
+	SUM(r1.rating*r2.rating) as dot_product,
+	SQRT( REDUCE(x=0.0, a IN COLLECT(r1.rating) | x + a^2) ) as r1_length,
+	SQRT( REDUCE(y=0.0, b IN COLLECT(r2.rating) | y + b^2) ) as r2_length,
+	c1,c2
+MERGE (c1)-[s:SIMILARITY]-(c2)
+SET s.similarity = dot_product / (r1_length * r2_length)
+----
+
+[source,cypher]
+----
+MATCH (me:Customer)-[r:SIMILARITY]->(them)
+WHERE me.customerID='ANTON'
+RETURN me.companyName, them.companyName, r.similarity
+ORDER BY r.similarity DESC limit 10
+----
+// table
+
+Great, let's now make a recommendation based on these similarity scores.
+
+[source,cypher]
+----
+WITH 1 as neighbours
+MATCH (me:Customer)-[:SIMILARITY]->(c:Customer)-[r:RATED]->(p:Product)
+WHERE me.customerID = 'ANTON' and NOT ( (me)-[:RATED|PRODUCT|ORDER*1..2]->(p:Product) )
+WITH p, COLLECT(r.rating)[0..neighbours] as ratings, collect(c.companyName)[0..neighbours] as customers
+WITH p, customers, REDUCE(s=0,i in ratings | s+i) / LENGTH(ratings)  as recommendation
+ORDER BY recommendation DESC
+RETURN p.productName, customers, recommendation LIMIT 10
+----
+//table
+
+There you have it!  Quick and simple recommendations using Neo4j.

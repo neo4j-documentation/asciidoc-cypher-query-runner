@@ -1,0 +1,17 @@
+{
+  "name": "asciidoc-cypher-query-runner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@asciidoctor/core": "^2.2.4",
+    "neo4j-driver": "^4.3.1",
+    "yargs": "^17.0.1"
+  }
+}

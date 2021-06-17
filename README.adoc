@@ -1,0 +1,28 @@
+= AsciiDoc Cypher Query Runner
+
+== Usage
+
+=== CLI
+
+ $ asciidoc-cypher-query-runner doc.adoc
+
+
+Environment variables::
+
+- NEO4J_DATABASE_URI
+- NEO4J_DATABASE_USER
+- NEO4J_DATABASE_PASSWORD
+
+
+=== API
+
+[,js]
+----
+const asciidocCypherQueryRunner = require('@neo4j-documentation/asciidoc-cypher-query-runner')
+
+const result = asciidocCypherQueryRunner.run('doc.adoc', {
+  neo4jDatabase: { uri: '', user: '', password: '' },
+  ignoreRoles: [],
+  explainOnly: false
+})
+----
