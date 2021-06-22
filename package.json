@@ -18,8 +18,7 @@
     "commander": "^7.2.0",
     "consola": "^2.15.3",
     "glob": "^7.1.7",
-    "neo4j-driver": "^4.3.1",
-    "yargs": "^17.0.1"
+    "neo4j-driver": "^4.3.1"
   },
   "devDependencies": {
     "chai": "^4.3.4",
