@@ -2,17 +2,61 @@
 
 == Usage
 
+=== Common environment variables
+
+[cols="2m,4a,1m",opts="header"]
+|====
+|Name
+|Description
+|Default value
+
+|NEO4J_DATABASE_URI
+|URI address of the Neo4j database
+|bolt://localhost
+
+|NEO4J_DATABASE_USER
+|User used to authentificate on the Neo4j database
+|neo4j
+
+|NEO4J_DATABASE_PASSWORD
+|Password used to authentificate on the Neo4j database
+|neo4j
+
+|NEO4J_DATABASE_NAME
+|Name of the database (optional)
+|
+
+|NEO4J_CONNECTION_ACQUISITION_TIMEOUT_SECONDS
+|The maximum amount of time to wait to acquire a connection from the Neo4j database (in seconds)
+|10
+
+|====
+
+=== Antora
+
+ $ antora --generator @neo4j-documentation/asciidoc-cypher-query-runner/lib/antora/generate-site.js antora-playbook.yml
+
+==== Environment variables
+
+[cols="2m,4a,1m",opts="header"]
+|====
+|Name
+|Description
+|Default value
+
+|ASCIIDOC_CYPHER_RUNNER_REPORTER_ERROR_FORMAT
+|Error format, must be either `short` or `full`
+|short
+
+|ASCIIDOC_CYPHER_RUNNER_REPORTER_ERROR_LIMIT
+|Display at most a given number of failures or errors
+|10
+
+|====
+
 === CLI
 
  $ asciidoc-cypher-query-runner doc.adoc
-
-
-Environment variables::
-
-- NEO4J_DATABASE_URI
-- NEO4J_DATABASE_USER
-- NEO4J_DATABASE_PASSWORD
-
 
 === API
 
@@ -22,7 +66,6 @@ const asciidocCypherQueryRunner = require('@neo4j-documentation/asciidoc-cypher-
 
 const result = asciidocCypherQueryRunner.run('doc.adoc', {
   neo4jDatabase: { uri: '', user: '', password: '' },
-  ignoreRoles: [],
-  explainOnly: false
+  ignoreRoles: []
 })
 ----
