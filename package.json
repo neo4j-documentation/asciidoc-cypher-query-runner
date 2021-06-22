@@ -1,6 +1,6 @@
 {
   "name": "@neo4j-documentation/asciidoc-cypher-query-runner",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run Cypher queries found in AsciiDoc files",
   "bin": {
     "asciidoc-cypher-query-runner": "bin/asciidoc-cypher-query-runner"
