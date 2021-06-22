@@ -1,3 +1,5 @@
+= Northwind recommendation engine
+
 Recently, I was asked to pitch a method for providing recommendations.  Luckily, armed with the knowledge obtained from talks from Max De Marzi and https://skillsmatter.com/skillscasts/7298-modelling-a-recommendation-engine-a-worked-example[Mark Needham^] at a recent  Neo4j London Meetups, I knew this could be easily achieved with Neo4j.
 
 The key issue with recommendation engines comes from the data.
@@ -120,7 +122,7 @@ ON CREATE SET pu.unitPrice = toFloat(row.unitPrice), pu.quantity = toFloat(row.q
 
 Now we've got some data, let's start to explore the dataset.
 
-=== Dataset
+== Dataset
 
 image::http://dev.assets.neo4j.com.s3.amazonaws.com/wp-content/uploads/Northwind_diagram.jpg[]
 
@@ -129,7 +131,7 @@ The Northwind Graph provides us with a rich dataset, but primarily we're interes
 image::https://raw.githubusercontent.com/adam-cowley/northwind-neo4j/master/product-model.png[]
 
 
-=== Popular Products
+== Popular Products
 
 To find the most popular products in the dataset, we can follow the path from `:Customer` to `:Product`
 
@@ -143,7 +145,7 @@ limit 5
 // table
 
 
-=== Content Based Recommendations
+== Content Based Recommendations
 
 The simplest recommendation we can make for a Customer is a content based recommendation.
 Based on their previous purchases, can we recommend them anything that they haven't already bought?
@@ -163,7 +165,7 @@ limit 5
 
 Pretty standard so far.
 
-=== Collaborative Filtering
+== Collaborative Filtering
 
 Collaborative Filtering is a technique used by recommendation engines to recommend content based on the feedback from other Customers.
 To do this, we can use the k-NN (k-nearest neighbors) Algorithm.

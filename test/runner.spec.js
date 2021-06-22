@@ -4,16 +4,23 @@ const dirtyChai = require('dirty-chai')
 const expect = chai.expect
 chai.use(dirtyChai)
 
-const { run } = require('../lib/runner.js')
-const catalog = require('../lib/catalog.js')
+const { runQueriesFromCatalog } = require('../lib/runner.js')
+const Reporter = require('../lib/reporter.js')
 const neo4jSession = require('../lib/neo4j-session.js')
 
-describe('runner', () => {
+describe('Runner', () => {
   it('should return a report', async () => {
-    const getFilesStub = sinon.stub(catalog, 'getFiles')
+    const connectStub = sinon.stub(neo4jSession, 'connect')
+    const executeStub = sinon.stub(neo4jSession, 'execute')
+    const getSessionStub = sinon.stub(neo4jSession, 'getSession')
     try {
-      getFilesStub.returns(Promise.resolve(['foo.adoc']))
-      sinon.stub(catalog, 'getCypherQueriesCatalog').returns({
+      connectStub.returns(Promise.resolve({}))
+      executeStub.returns(Promise.resolve({}))
+      getSessionStub.returns({
+        close: sinon.fake()
+      })
+      const reporter = new Reporter()
+      const cypherQueriesCatalog = [{
         queries: [
           {
             content: `MATCH (n {name: 'B'})
@@ -24,30 +31,24 @@ RETURN n`,
             }
           }
         ]
+      }]
+      const result = await runQueriesFromCatalog(cypherQueriesCatalog, {
+        neo4jDriver: {},
+        reporter
       })
-      sinon.stub(neo4jSession, 'connect').returns(Promise.resolve({}))
-      sinon.stub(neo4jSession, 'execute').returns(Promise.resolve({}))
-      sinon.stub(neo4jSession, 'getSession').returns({
-        close: sinon.fake()
-      })
-      const result = await run({
-        ignoreRoles: [],
-        asciidoctorOptions: {},
-        globPattern: '**/*.adoc',
-        neo4jDriver: {}
-      })
-      expect(getFilesStub.calledOnce).to.be.true()
-      expect(result).to.deep.include.members([{
-        status: 'success',
-        query: 'MATCH (n {name: \'B\'})\nRETURN n',
-        output: {},
-        sourceLocation: {
-          lineNumber: 5,
-          path: '/path/to/foo.adoc'
+      expect(executeStub.calledOnce).to.be.true()
+      expect(reporter.getSuccess()).to.deep.include.members([
+        {
+          status: 'success',
+          query: 'MATCH (n {name: \'B\'})\nRETURN n',
+          output: {},
+          sourceLocation: { lineNumber: 5, path: '/path/to/foo.adoc' }
         }
-      }])
+      ])
     } finally {
-      getFilesStub.restore()
+      connectStub.restore()
+      executeStub.restore()
+      getSessionStub.restore()
     }
   })
 })

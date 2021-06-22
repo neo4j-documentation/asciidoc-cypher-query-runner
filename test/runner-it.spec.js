@@ -1,7 +1,7 @@
 const neo4j = require('neo4j-driver')
 const { GenericContainer } = require('testcontainers')
 
-describe('GenericContainer', () => {
+describe.skip('Integration tests', () => {
   let container
   let neo4jDriver
 
@@ -29,9 +29,14 @@ describe('GenericContainer', () => {
     }
   })
 
-  it('works', async () => {
+  it('should execute query against Neo4j Docker instance', async () => {
     const session = neo4jDriver.session()
-    const r = await session.run('RETURN 1')
-    console.log({ r })
+    try {
+      const r = await session.run('RETURN 1')
+      // success!
+    } catch (err) {
+      // failure
+      expect.fail('Unable to connecto to Neo4j', err)
+    }
   })
 })
