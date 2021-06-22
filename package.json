@@ -3,10 +3,17 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "bin": {
+    "asciidoc-cypher-query-runner": "bin/asciidoc-cypher-query-runner"
+  },
   "scripts": {
     "lint": "standard",
     "test": "mocha test/**/*.spec.js"
   },
+  "files": [
+    "bin",
+    "lib"
+  ],
   "keywords": [],
   "author": "",
   "license": "MIT",
