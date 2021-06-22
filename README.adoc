@@ -44,19 +44,61 @@
 |Description
 |Default value
 
+|ASCIIDOC_CYPHER_RUNNER_IGNORE_ROLES
+|Ignore Cypher source blocks with that role (list separated by comma)
+|
+
+|ASCIIDOC_CYPHER_RUNNER_FAIL_FAST
+|Fail fast and exit when it encounters an error
+|
+
+|ASCIIDOC_CYPHER_RUNNER_NO_EXPLAIN
+|Execute queries instead of using `EXPLAIN` clause
+|
+
 |ASCIIDOC_CYPHER_RUNNER_REPORTER_ERROR_FORMAT
 |Error format, must be either `short` or `full`
-|short
+|full
 
 |ASCIIDOC_CYPHER_RUNNER_REPORTER_ERROR_LIMIT
 |Display at most a given number of failures or errors
-|10
+|3
 
 |====
 
 === CLI
 
  $ asciidoc-cypher-query-runner doc.adoc
+
+==== Options
+
+[cols="2m,4a,1m",opts="header"]
+|====
+|Option
+|Description
+|Default value
+
+|-i, --ignore-role <role>
+|Ignore Cypher source blocks with that role (this option may be specified more than once)
+|
+
+|--fail-fast
+|Fail fast and exit when it encounters an error
+|false
+
+|--no-explain
+|Execute queries instead of using `EXPLAIN` clause
+|false
+
+|--reporter-error-limit <value>
+|Display at most a given number of failures or errors
+|3
+
+|--reporter-error-format <format>
+|Error format, must be either `short` or `full`
+|`full`
+
+|====
 
 === API
 
