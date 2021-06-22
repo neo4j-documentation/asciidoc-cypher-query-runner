@@ -40,7 +40,7 @@ RETURN n`,
       expect(reporter.getSuccess()).to.deep.include.members([
         {
           status: 'success',
-          query: 'MATCH (n {name: \'B\'})\nRETURN n',
+          query: 'EXPLAIN MATCH (n {name: \'B\'})\nRETURN n',
           output: {},
           sourceLocation: { lineNumber: 5, path: '/path/to/foo.adoc' }
         }
