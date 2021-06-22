@@ -1,4 +1,8 @@
 const neo4j = require('neo4j-driver')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
+const expect = chai.expect
+chai.use(dirtyChai)
 const { GenericContainer } = require('testcontainers')
 
 describe.skip('Integration tests', () => {
@@ -32,7 +36,7 @@ describe.skip('Integration tests', () => {
   it('should execute query against Neo4j Docker instance', async () => {
     const session = neo4jDriver.session()
     try {
-      const r = await session.run('RETURN 1')
+      await session.run('RETURN 1')
       // success!
     } catch (err) {
       // failure

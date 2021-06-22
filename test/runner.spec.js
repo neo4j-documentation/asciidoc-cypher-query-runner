@@ -32,7 +32,7 @@ RETURN n`,
           }
         ]
       }]
-      const result = await runQueriesFromCatalog(cypherQueriesCatalog, {
+      await runQueriesFromCatalog(cypherQueriesCatalog, {
         neo4jDriver: {},
         reporter
       })
