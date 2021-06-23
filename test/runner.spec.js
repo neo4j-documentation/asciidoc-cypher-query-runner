@@ -51,4 +51,43 @@ RETURN n`,
       getSessionStub.restore()
     }
   })
+  it('should split queries', async () => {
+    const connectStub = sinon.stub(neo4jSession, 'connect')
+    const executeStub = sinon.stub(neo4jSession, 'execute')
+    const getSessionStub = sinon.stub(neo4jSession, 'getSession')
+    try {
+      connectStub.returns(Promise.resolve({}))
+      executeStub.returns(Promise.resolve({}))
+      getSessionStub.returns({
+        close: sinon.fake()
+      })
+      const reporter = new Reporter()
+      const cypherQueriesCatalog = [{
+        queries: [
+          {
+            content: `CREATE CONSTRAINT ON (a:Article) ASSERT a.index IS UNIQUE;
+CREATE CONSTRAINT ON (a:Author) ASSERT a.name IS UNIQUE;
+CREATE CONSTRAINT ON (v:Venue) ASSERT v.name IS UNIQUE;`,
+            sourceLocation: {
+              lineNumber: 5,
+              path: '/path/to/foo.adoc'
+            }
+          }
+        ]
+      }]
+      await runQueriesFromCatalog(cypherQueriesCatalog, {
+        neo4jDriver: {},
+        reporter
+      })
+      const calls = executeStub.getCalls()
+      expect(calls.length).to.equal(3)
+      expect(calls[0].args[1]).to.equal('EXPLAIN CREATE CONSTRAINT ON (a:Article) ASSERT a.index IS UNIQUE')
+      expect(calls[1].args[1]).to.equal('EXPLAIN CREATE CONSTRAINT ON (a:Author) ASSERT a.name IS UNIQUE')
+      expect(calls[2].args[1]).to.equal('EXPLAIN CREATE CONSTRAINT ON (v:Venue) ASSERT v.name IS UNIQUE')
+    } finally {
+      connectStub.restore()
+      executeStub.restore()
+      getSessionStub.restore()
+    }
+  })
 })
