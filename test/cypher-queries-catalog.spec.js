@@ -1,3 +1,6 @@
+/* eslint-env mocha */
+'use strict'
+
 const ospath = require('path')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')

@@ -1,3 +1,6 @@
+/* eslint-env mocha */
+'use strict'
+
 const sinon = require('sinon')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
@@ -104,7 +107,7 @@ CREATE CONSTRAINT ON (v:Venue) ASSERT v.name IS UNIQUE;`,
       const cypherQueriesCatalog = [{
         queries: [
           {
-            content: `EXPLAIN CREATE CONSTRAINT ON (a:Article) ASSERT a.index IS UNIQUE`,
+            content: 'EXPLAIN CREATE CONSTRAINT ON (a:Article) ASSERT a.index IS UNIQUE',
             sourceLocation: {
               lineNumber: 5,
               path: '/path/to/foo.adoc'

@@ -1,3 +1,6 @@
+/* eslint-env mocha */
+'use strict'
+
 const neo4j = require('neo4j-driver')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
